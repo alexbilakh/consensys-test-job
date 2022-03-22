@@ -28,7 +28,7 @@ contract RoomBooking {
     // rooms data with user-count and company type
     RoomData[ROOM_COUNT] private rooms;
 
-    event BookedRoom(uint8 room, address booker, Company company);
+    event BookedRoom(uint8 room, UserData user, Company company);
     event CanceledReservation(uint8 room, address booker, Company company);
 
     modifier onlyBookedUser(address _addr) {
@@ -104,17 +104,20 @@ contract RoomBooking {
         rooms[_roomNumber].userCount++;
         rooms[_roomNumber].company = company;
         userRoom[msg.sender] = _roomNumber + 1;
-        users.push(UserData({
+
+        UserData memory newUser = UserData({
             userAddress: msg.sender,
             bookedAt: uint32(block.timestamp)
-        }));
+        });
+        users.push(newUser);
 
-        emit BookedRoom(_roomNumber, msg.sender, company);
+        emit BookedRoom(_roomNumber, newUser, company);
     }
 
     // cancel reservation
     function cancelReservation() public onlyBookedUser(msg.sender) {
-        RoomData storage targetRoom = rooms[userRoom[msg.sender] - 1];
+        uint8 oldRoomNumber = userRoom[msg.sender] - 1;
+        RoomData storage targetRoom = rooms[oldRoomNumber];
         targetRoom.userCount--;
         
         // mark as deleted in userRoom
@@ -131,6 +134,6 @@ contract RoomBooking {
         users[_userIndex] = users[users.length - 1];
         users.pop();
 
-        emit CanceledReservation(userRoom[msg.sender] - 1, msg.sender, targetRoom.company);
+        emit CanceledReservation(oldRoomNumber, msg.sender, targetRoom.company);
     }
 }
